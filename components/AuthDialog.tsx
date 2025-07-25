@@ -12,9 +12,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import React from "react";
 import { toast } from "sonner";
-import axios from "axios";
 import { useRouter } from "next/navigation";
 import { useLoading } from "./context/LoadingContext";
+import { signIn } from "next-auth/react"; // <-- IMPORT BARU
 
 export const AuthDialog = () => {
   const [open, setOpen] = React.useState(false);
@@ -22,6 +22,7 @@ export const AuthDialog = () => {
   const router = useRouter();
   const { setIsLoading } = useLoading();
 
+  // --- FUNGSI INI DIUBAH TOTAL ---
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -29,8 +30,7 @@ export const AuthDialog = () => {
 
     const form = e.currentTarget;
     const email = (form.querySelector("#email") as HTMLInputElement).value;
-    const password = (form.querySelector("#password") as HTMLInputElement)
-      .value;
+    const password = (form.querySelector("#password") as HTMLInputElement).value;
 
     if (!email || !password) {
       toast.error("Email and password are required!");
@@ -40,16 +40,25 @@ export const AuthDialog = () => {
     }
 
     try {
-      const res = await axios.post("/api/auth/login", { email, password });
-      toast.success("Sign In successful!");
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
-      router.push("/overview");
-      setOpen(false);
-    } catch (err: any) {
+      // Gunakan signIn dari next-auth, bukan axios
+      const result = await signIn("credentials", {
+        redirect: false, // Penting! Agar tidak redirect otomatis
+        email: email,
+        password: password,
+      });
+
+      if (result?.ok) {
+        toast.success("Sign In successful!");
+        setOpen(false);
+        // Refresh halaman agar sesi baru terbaca oleh server & middleware
+        router.refresh(); 
+      } else {
+        // Tampilkan pesan error dari Next-Auth jika login gagal
+        toast.error(result?.error || "Invalid credentials");
+      }
+    } catch (err) {
       console.error("Auth error:", err);
-      const msg = err.response?.data?.message || "Server error";
-      toast.error(msg);
+      toast.error("An unexpected error occurred.");
     } finally {
       setIsLoading(false);
       setIsSubmitting(false);
