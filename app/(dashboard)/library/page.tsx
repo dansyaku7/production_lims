@@ -24,7 +24,7 @@ export default async function DataLibraryPage() {
   return (
     <div className="p-4 sm:p-6 md:p-8 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Data Library</h1>
+        <h1 className="text-3xl font-bold">Data Library Certificate of Analysis</h1>
         <p className="text-muted-foreground mt-1">
           Lihat dan kelola semua laporan yang telah disimpan.
         </p>

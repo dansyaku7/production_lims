@@ -237,7 +237,7 @@ export function DataTable({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <Link href={`/registration/${row.original.id}`}>
+              <Link href={`/registration/${row.original.nomorFpps}`}>
                 <DropdownMenuItem>Edit</DropdownMenuItem>
               </Link>
               <DropdownMenuItem
