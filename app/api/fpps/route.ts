@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import connectDB from "@/lib/db";
 import Fpps from "@/models/Fpps";
 
@@ -11,6 +12,8 @@ export async function POST(req: NextRequest) {
 
     const fpps = new Fpps({ ...formData, rincian });
     await fpps.save();
+
+    revalidatePath("/registration");
 
     return NextResponse.json(
       { message: "FPPS berhasil disimpan" },
