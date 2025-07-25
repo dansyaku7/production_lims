@@ -1,23 +1,25 @@
 import { ReportListClient } from "./components/ReportListClient";
+import connectDB from "@/lib/db"; // Import koneksi DB
+import Report from "@/models/Report"; // Ganti dengan nama model Report-mu
 
-async function getReports() {
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    const response = await fetch(`${baseUrl}/api/reports`, {
-      cache: "no-store",
-    });
-
-    if (!response.ok) {
-      return { success: false, error: "Gagal memuat data." };
-    }
-    return response.json();
-  } catch (error) {
-    return { success: false, error: "Terjadi kesalahan jaringan." };
-  }
-}
+// Tandai halaman ini sebagai dinamis untuk memastikan data selalu baru
+export const dynamic = 'force-dynamic';
 
 export default async function DataLibraryPage() {
-  const result = await getReports();
+  let reports = [];
+  let error = null;
+
+  try {
+    await connectDB();
+    // Langsung query ke database
+    const reportData = await Report.find({}).sort({ createdAt: -1 }).lean();
+    reports = JSON.parse(JSON.stringify(reportData)); // Pastikan data serializable
+  } catch (e) {
+    console.error("Gagal memuat reports:", e);
+    error = "Terjadi kesalahan saat mengambil data dari database.";
+  }
+
+  const result = error ? { success: false, error } : { success: true, data: reports };
 
   return (
     <div className="p-4 sm:p-6 md:p-8 space-y-6">
