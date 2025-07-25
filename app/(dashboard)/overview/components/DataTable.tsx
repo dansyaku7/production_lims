@@ -4,31 +4,17 @@ import * as React from "react";
 import axios from "axios";
 import { toast } from "sonner";
 import {
-  closestCenter,
-  DndContext,
-  useSensor,
-  useSensors,
-  MouseSensor,
-  TouchSensor,
-  KeyboardSensor,
-  type DragEndEvent,
-  type UniqueIdentifier,
+  // ... (import dnd-kit biarkan saja)
 } from "@dnd-kit/core";
 import {
-  arrayMove,
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy,
+  // ... (import dnd-kit/sortable biarkan saja)
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
   IconCircleCheckFilled,
   IconDotsVertical,
   IconLoader,
-  IconChevronLeft,
-  IconChevronRight,
-  IconChevronsLeft,
-  IconChevronsRight,
+  // ... (import ikon lain biarkan saja)
 } from "@tabler/icons-react";
 import {
   ColumnDef,
@@ -47,49 +33,37 @@ import { z } from "zod";
 
 import {
   AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+  // ... (import alert-dialog biarkan saja)
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+  // ... (import dropdown-menu biarkan saja)
 } from "@/components/ui/dropdown-menu";
 import {
   Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  // ... (import select biarkan saja)
 } from "@/components/ui/select";
 import {
   Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  // ... (import table biarkan saja)
 } from "@/components/ui/table";
 import { useLoading } from "@/components/context/LoadingContext";
 import Link from "next/link";
 
+// --- PERUBAHAN: Pastikan semua field ada di schema ---
 export const schema = z.object({
   id: z.string(),
   nomorFpps: z.string(),
   header: z.string(),
   ppic: z.string(),
   email: z.string(),
+  limit: z.string(), // Ini untuk Nomor HP
   status: z.string(),
 });
 
+// ... (Komponen DraggableRow biarkan sama) ...
 function DraggableRow({ row }: { row: Row<z.infer<typeof schema>> }) {
   const { transform, transition, setNodeRef, isDragging } = useSortable({
     id: row.original.id,
@@ -111,16 +85,33 @@ function DraggableRow({ row }: { row: Row<z.infer<typeof schema>> }) {
   );
 }
 
+
+// --- PERUBAHAN: Terima prop 'role' ---
 export function DataTable({
   data: initialData,
+  role,
 }: {
   data: z.infer<typeof schema>[];
+  role: 'admin' | 'guest';
 }) {
   const [data, setData] = React.useState(initialData);
   const [itemToDelete, setItemToDelete] = React.useState<string | null>(null);
   const { setIsLoading } = useLoading();
+  
+  // --- PERUBAHAN: Atur visibilitas kolom berdasarkan role ---
   const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({});
+    React.useState<VisibilityState>(() => {
+      if (role === 'guest') {
+        return {
+          ppic: false,
+          email: false,
+          limit: false,
+          actions: false,
+        };
+      }
+      return {}; // Admin bisa lihat semua
+    });
+
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
@@ -130,6 +121,7 @@ export function DataTable({
     pageSize: 10,
   });
 
+  // ... (fungsi handleDelete biarkan sama) ...
   const handleDelete = async () => {
     if (!itemToDelete) return;
 
@@ -155,6 +147,8 @@ export function DataTable({
     }
   };
 
+
+  // --- PERUBAHAN: Definisikan SEMUA kolom di sini ---
   const columns: ColumnDef<z.infer<typeof schema>>[] = [
     {
       id: "no",
@@ -173,6 +167,22 @@ export function DataTable({
       accessorKey: "header",
       header: "Nama Pelanggan",
       cell: ({ row }) => row.original.header,
+    },
+    // KOLOM BARU UNTUK ADMIN
+    {
+      accessorKey: "ppic",
+      header: "Nama PPIC",
+      cell: ({ row }) => row.original.ppic,
+    },
+    {
+      accessorKey: "email",
+      header: "Email PPIC",
+      cell: ({ row }) => row.original.email,
+    },
+    {
+      accessorKey: "limit",
+      header: "Nomor Handphone",
+      cell: ({ row }) => row.original.limit,
     },
     {
       accessorKey: "status",
@@ -206,7 +216,7 @@ export function DataTable({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <Link href={`/registration/${row.original.nomorFpps}`}>
+              <Link href={`/registration/${row.original.id}`}>
                 <DropdownMenuItem>Edit</DropdownMenuItem>
               </Link>
               <DropdownMenuItem
@@ -223,6 +233,7 @@ export function DataTable({
     },
   ];
 
+  // ... (sisa kode (sensors, dataIds, useReactTable, handleDragEnd, JSX) biarkan sama) ...
   const sensors = useSensors(
     useSensor(MouseSensor),
     useSensor(TouchSensor),

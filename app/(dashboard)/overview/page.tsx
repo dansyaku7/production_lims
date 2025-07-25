@@ -10,11 +10,25 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 
-// TAMBAHKAN BARIS INI
+// --- DITAMBAHKAN ---
+// Ini adalah placeholder. Ganti dengan fungsi autentikasi-mu.
+// Contoh menggunakan next-auth: import { getServerSession } from "next-auth";
+async function getCurrentUserRole(): Promise<'admin' | 'guest'> {
+  // const session = await getServerSession(authOptions);
+  // if (session?.user?.role === 'admin') {
+  //   return 'admin';
+  // }
+  // Untuk sekarang, kita anggap defaultnya admin. Ganti ini sesuai logikamu.
+  return 'admin'; 
+}
+
 export const dynamic = 'force-dynamic';
 
 export default async function DashboardPage() {
   await connectDB();
+  
+  // 1. Dapatkan role user
+  const userRole = await getCurrentUserRole();
 
   type FppsDoc = {
     _id: any;
@@ -22,7 +36,7 @@ export default async function DashboardPage() {
     namaPelanggan: string;
     namaPpic: string;
     emailPpic: string;
-    noTelp: string;
+    noTelp: string; // Pastikan ini ada di modelmu
     status?: string;
   };
 
@@ -44,7 +58,7 @@ export default async function DashboardPage() {
     header: item.namaPelanggan,
     ppic: item.namaPpic,
     email: item.emailPpic,
-    limit: item.noTelp,
+    limit: item.noTelp, // 'limit' digunakan untuk Nomor HP di DataTable-mu
     status: item.status || "Pendaftaran",
   }));
 
@@ -68,7 +82,8 @@ export default async function DashboardPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <DataTable data={dataForTable} />
+          {/* 2. Kirim 'role' sebagai prop ke DataTable */}
+          <DataTable data={dataForTable} role={userRole} />
         </CardContent>
       </Card>
     </main>
