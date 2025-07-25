@@ -2,9 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/db";
 import Fpps from "@/models/Fpps";
 
-// Fungsi GET (Tidak ada perubahan, sudah benar)
 export async function GET(
-  request: NextRequest,
+  req: NextRequest,
   { params }: { params: { nomor: string } }
 ) {
   await connectDB();
@@ -46,7 +45,6 @@ export async function GET(
   }
 }
 
-// Fungsi PUT (Tidak ada perubahan, sudah benar)
 export async function PUT(
   request: NextRequest,
   { params }: { params: { nomor: string } }
@@ -108,24 +106,20 @@ export async function PUT(
   }
 }
 
-// Fungsi DELETE (Ini yang diubah)
-// Kita hapus parameter 'request' karena tidak digunakan
 export async function DELETE(
-  request: Request, // Parameter request tetap harus ada, walau tidak dipakai
+  req: NextRequest,
   { params }: { params: { nomor: string } }
 ) {
-  const nomorFppsToDelete = params.nomor;
+  const idToDelete = params.nomor;
 
   try {
     await connectDB();
 
-    const deletedFpps = await Fpps.findOneAndDelete({
-      nomorFpps: nomorFppsToDelete,
-    });
+    const deletedFpps = await Fpps.findByIdAndDelete(idToDelete);
 
     if (!deletedFpps) {
       return NextResponse.json(
-        { message: `Data dengan nomor FPPS ${nomorFppsToDelete} tidak ditemukan` },
+        { message: `Data dengan ID ${idToDelete} tidak ditemukan` },
         { status: 404 }
       );
     }
