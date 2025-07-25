@@ -10,6 +10,9 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 
+// TAMBAHKAN BARIS INI
+export const dynamic = 'force-dynamic';
+
 export default async function DashboardPage() {
   await connectDB();
 
@@ -23,7 +26,7 @@ export default async function DashboardPage() {
     status?: string;
   };
 
-  const allData = (await Fpps.find().lean()) as unknown as FppsDoc[];
+  const allData = (await Fpps.find().sort({ createdAt: -1 }).lean()) as unknown as FppsDoc[];
 
   const totalClients = new Set(allData.map((item) => item.namaPelanggan)).size;
 
