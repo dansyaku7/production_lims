@@ -3,18 +3,33 @@
 import * as React from "react";
 import axios from "axios";
 import { toast } from "sonner";
+// --- PASTIKAN SEMUA IMPORT INI ADA ---
 import {
-  // ... (import dnd-kit biarkan saja)
+  closestCenter,
+  DndContext,
+  useSensor,
+  useSensors,
+  MouseSensor,
+  TouchSensor,
+  KeyboardSensor,
+  type DragEndEvent,
+  type UniqueIdentifier,
 } from "@dnd-kit/core";
 import {
-  // ... (import dnd-kit/sortable biarkan saja)
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
   IconCircleCheckFilled,
   IconDotsVertical,
   IconLoader,
-  // ... (import ikon lain biarkan saja)
+  IconChevronLeft,
+  IconChevronRight,
+  IconChevronsLeft,
+  IconChevronsRight,
 } from "@tabler/icons-react";
 import {
   ColumnDef,
@@ -33,37 +48,50 @@ import { z } from "zod";
 
 import {
   AlertDialog,
-  // ... (import alert-dialog biarkan saja)
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
-  // ... (import dropdown-menu biarkan saja)
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
   Select,
-  // ... (import select biarkan saja)
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import {
   Table,
-  // ... (import table biarkan saja)
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import { useLoading } from "@/components/context/LoadingContext";
 import Link from "next/link";
 
-// --- PERUBAHAN: Pastikan semua field ada di schema ---
 export const schema = z.object({
   id: z.string(),
   nomorFpps: z.string(),
   header: z.string(),
   ppic: z.string(),
   email: z.string(),
-  limit: z.string(), // Ini untuk Nomor HP
+  limit: z.string(),
   status: z.string(),
 });
 
-// ... (Komponen DraggableRow biarkan sama) ...
 function DraggableRow({ row }: { row: Row<z.infer<typeof schema>> }) {
   const { transform, transition, setNodeRef, isDragging } = useSortable({
     id: row.original.id,
@@ -85,8 +113,6 @@ function DraggableRow({ row }: { row: Row<z.infer<typeof schema>> }) {
   );
 }
 
-
-// --- PERUBAHAN: Terima prop 'role' ---
 export function DataTable({
   data: initialData,
   role,
@@ -98,7 +124,6 @@ export function DataTable({
   const [itemToDelete, setItemToDelete] = React.useState<string | null>(null);
   const { setIsLoading } = useLoading();
   
-  // --- PERUBAHAN: Atur visibilitas kolom berdasarkan role ---
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>(() => {
       if (role === 'guest') {
@@ -109,7 +134,7 @@ export function DataTable({
           actions: false,
         };
       }
-      return {}; // Admin bisa lihat semua
+      return {};
     });
 
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -121,7 +146,6 @@ export function DataTable({
     pageSize: 10,
   });
 
-  // ... (fungsi handleDelete biarkan sama) ...
   const handleDelete = async () => {
     if (!itemToDelete) return;
 
@@ -147,8 +171,6 @@ export function DataTable({
     }
   };
 
-
-  // --- PERUBAHAN: Definisikan SEMUA kolom di sini ---
   const columns: ColumnDef<z.infer<typeof schema>>[] = [
     {
       id: "no",
@@ -168,7 +190,6 @@ export function DataTable({
       header: "Nama Pelanggan",
       cell: ({ row }) => row.original.header,
     },
-    // KOLOM BARU UNTUK ADMIN
     {
       accessorKey: "ppic",
       header: "Nama PPIC",
@@ -233,7 +254,6 @@ export function DataTable({
     },
   ];
 
-  // ... (sisa kode (sensors, dataIds, useReactTable, handleDragEnd, JSX) biarkan sama) ...
   const sensors = useSensors(
     useSensor(MouseSensor),
     useSensor(TouchSensor),
