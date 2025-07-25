@@ -76,7 +76,7 @@ export default function EditRegistrationPage() {
       } catch (error) {
         console.error("Gagal mengambil data untuk diedit:", error);
         toast.error("Gagal mengambil data. Mungkin data tidak ditemukan.");
-        router.push("/overview");
+        router.push("/overview"); // Ganti jika path halaman list berbeda
       } finally {
         setIsLoading(false);
       }
@@ -94,7 +94,11 @@ export default function EditRegistrationPage() {
     try {
       await axios.put(`/api/fpps/${id}`, payload);
       toast.success(`Data untuk ${nomorFppsFinal} berhasil diperbarui!`);
-      router.push("/overview");
+
+      // TAMBAHKAN REFRESH DI SINI
+      router.refresh();
+
+      router.push("/overview"); // Ganti jika path halaman list berbeda
     } catch (error: any) {
       console.error(error);
       toast.error(

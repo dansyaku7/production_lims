@@ -17,6 +17,7 @@ import FormRincian from "./components/FormRincian";
 import { FppsDocument } from "./components/FppsDocument";
 import { toast } from "sonner";
 import { useLoading } from "@/components/context/LoadingContext";
+import { useRouter } from "next/navigation"; // IMPORT BARU
 
 interface RincianItem {
   id: string;
@@ -47,6 +48,7 @@ export default function RegistrationPage() {
   const [formData, setFormData] = useState(initialFormData);
   const [rincian, setRincian] = useState(initialRincian);
   const { setIsLoading } = useLoading();
+  const router = useRouter(); // INISIALISASI ROUTER
 
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const documentRef = useRef<HTMLDivElement>(null);
@@ -67,10 +69,13 @@ export default function RegistrationPage() {
     setIsLoading(true);
     try {
       const minimumDelay = new Promise((resolve) => setTimeout(resolve, 500));
-
       await Promise.all([axios.post("/api/fpps", payload), minimumDelay]);
 
       toast.success(`Data untuk ${nomorFppsFinal} berhasil disimpan!`);
+      
+      // TAMBAHKAN REFRESH DI SINI
+      router.refresh();
+
       resetForm();
     } catch (error: any) {
       console.error(error);
