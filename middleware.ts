@@ -8,8 +8,7 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Jika belum login dan mencoba akses halaman yang dilindungi
-  if (!token && !pathname.startsWith('/api/auth')) { // Izinkan akses ke API auth
-     // Jika halaman yang dituju bukan halaman login (root), redirect ke login
+  if (!token && !pathname.startsWith('/api/auth')) {
      if (pathname !== '/') {
         return NextResponse.redirect(new URL('/', req.url));
      }
@@ -19,24 +18,31 @@ export async function middleware(req: NextRequest) {
   if (token) {
     const userRole = token.role as string;
 
-    // Jika sudah login, jangan biarkan akses halaman login lagi
+    // --- PERUBAHAN UTAMA ADA DI SINI ---
+    // Logika redirect setelah login berhasil (saat berada di halaman login '/')
     if (pathname === '/') {
-        if (userRole === 'admin') return NextResponse.redirect(new URL('/overview', req.url));
-        // Guest dan Analyst diarahkan ke dashboard umum
-        return NextResponse.redirect(new URL('/dashboard', req.url));
+        if (userRole === 'admin') {
+            return NextResponse.redirect(new URL('/overview', req.url));
+        }
+        // Jika rolenya analyst, arahkan ke data library
+        if (userRole === 'analyst') {
+            return NextResponse.redirect(new URL('/library', req.url)); // Diarahkan ke /library
+        }
+        // Jika rolenya guest, arahkan ke dashboard umum
+        if (userRole === 'guest') {
+            return NextResponse.redirect(new URL('/dashboard', req.url));
+        }
     }
 
-    // Aturan untuk role 'analyst'
+    // Aturan untuk role 'analyst' yang mencoba akses halaman terlarang
     if (userRole === 'analyst') {
-      // Analyst tidak boleh akses halaman admin dan pendaftaran
       if (pathname.startsWith('/overview') || pathname.startsWith('/registration')) {
-        return NextResponse.redirect(new URL('/dashboard', req.url)); // Lempar ke dashboard mereka
+        return NextResponse.redirect(new URL('/library', req.url)); // Arahkan kembali ke halaman yang diizinkan
       }
     }
     
     // Aturan untuk role 'guest'
     if (userRole === 'guest') {
-       // Guest hanya boleh akses dashboard umum
        const allowedPaths = ['/dashboard'];
        if (!allowedPaths.some(path => pathname.startsWith(path))) {
          return NextResponse.redirect(new URL('/dashboard', req.url));
@@ -50,7 +56,7 @@ export async function middleware(req: NextRequest) {
 // Tentukan halaman mana saja yang akan dijaga oleh middleware
 export const config = {
   matcher: [
-    '/', // Halaman login/root
+    '/', 
     '/overview/:path*',
     '/dashboard/:path*',
     '/registration/:path*',
