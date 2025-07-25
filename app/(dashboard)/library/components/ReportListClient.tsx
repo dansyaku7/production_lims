@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -22,41 +22,74 @@ import { Pencil, Trash2, Loader2, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"; // Import untuk konfirmasi hapus
 
-// PERUBAHAN: Default status diubah menjadi "Analisis"
+// 1. Definisikan tipe data yang jelas
+interface Report {
+  _id: string;
+  coverData?: {
+    customer?: string;
+    nomorFpps?: string;
+  };
+  status: "analisis" | "selesai";
+}
+
+interface ReportListClientProps {
+  initialReportsResult: {
+    success: boolean;
+    data?: Report[];
+    error?: string;
+  };
+}
+
 const formatStatusText = (status: string) => {
-  if (!status) return "Analisis"; // Diubah dari "Process"
+  if (!status || status === "analisis") return "Analisis";
   return status.charAt(0).toUpperCase() + status.slice(1);
 };
 
-export function ReportListClient({
-  initialReportsResult,
-}: {
-  initialReportsResult: any;
-}) {
-  const [reports, setReports] = useState(
-    initialReportsResult.success ? initialReportsResult.data : []
-  );
-  const [error, setError] = useState(
-    !initialReportsResult.success ? initialReportsResult.error : null
-  );
+export function ReportListClient({ initialReportsResult }: ReportListClientProps) {
+  const [reports, setReports] = useState<Report[] | null>(null); // Diubah ke null
+  const [error, setError] = useState<string | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [reportToDelete, setReportToDelete] = useState<string | null>(null);
   const router = useRouter();
+
+  // 2. Gunakan useEffect untuk mengisi data dengan aman
+  useEffect(() => {
+    if (initialReportsResult.success) {
+      setReports(initialReportsResult.data || []);
+    } else {
+      setError(initialReportsResult.error || "Terjadi kesalahan tidak diketahui.");
+    }
+  }, [initialReportsResult]);
 
   const handleEdit = (reportId: string) => {
     router.push(`/coa?id=${reportId}`);
   };
 
-  const handleDelete = async (reportId: string) => {
-    if (
-      !confirm("Apakah Anda yakin ingin menghapus laporan ini secara permanen?")
-    ) {
-      return;
-    }
+  // 3. Pisahkan konfirmasi dan aksi hapus
+  const confirmDelete = (reportId: string) => {
+    setReportToDelete(reportId);
+    setIsDeleteDialogOpen(true);
+  };
 
-    setLoadingId(reportId);
+  const handleDelete = async () => {
+    if (!reportToDelete) return;
+
+    setLoadingId(reportToDelete);
+    setIsDeleteDialogOpen(false); // Tutup dialog
     try {
-      const response = await fetch(`/api/reports/${reportId}`, {
+      const response = await fetch(`/api/reports/${reportToDelete}`, {
         method: "DELETE",
       });
 
@@ -64,18 +97,18 @@ export function ReportListClient({
         throw new Error("Gagal menghapus laporan dari server.");
       }
 
-      setReports((prevReports: any[]) =>
-        prevReports.filter((report) => report._id !== reportId)
+      setReports((prevReports) =>
+        prevReports ? prevReports.filter((report) => report._id !== reportToDelete) : []
       );
       toast.success("Laporan berhasil dihapus.");
     } catch (err: any) {
       toast.error(`Error: ${err.message}`);
     } finally {
       setLoadingId(null);
+      setReportToDelete(null);
     }
   };
 
-  // PERUBAHAN: Tipe status diubah menjadi "analisis" | "selesai"
   const handleStatusChange = async (
     reportId: string,
     newStatus: "analisis" | "selesai"
@@ -93,18 +126,18 @@ export function ReportListClient({
         throw new Error(result.error || "Gagal mengubah status.");
       }
 
-      setReports((prevReports: any[]) =>
-        prevReports.map((report) =>
-          report._id === reportId ? { ...report, status: newStatus } : report
-        )
+      setReports((prevReports) =>
+        prevReports
+          ? prevReports.map((report) =>
+              report._id === reportId ? { ...report, status: newStatus } : report
+            )
+          : []
       );
       toast.success(
-        `Status laporan berhasil diubah menjadi "${formatStatusText(
-          newStatus
-        )}"`
+        `Status laporan berhasil diubah menjadi "${formatStatusText(newStatus)}"`
       );
     } catch (err: any) {
-      alert(`Error: ${err.message}`);
+      toast.error(`Error: ${err.message}`); // Mengganti alert dengan toast
     } finally {
       setLoadingId(null);
     }
@@ -120,101 +153,125 @@ export function ReportListClient({
     );
   }
 
+  // 4. Tampilkan loading spinner jika data belum siap di client
+  if (reports === null) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Laporan Tersimpan</CardTitle>
-        <CardDescription>
-          Total {reports.length} laporan ditemukan.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="relative w-full overflow-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nama Customer</TableHead>
-                <TableHead>No. FPPS</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {reports.length > 0 ? (
-                reports.map((report: any) => (
-                  <TableRow key={report._id}>
-                    <TableCell className="font-medium">
-                      {report.coverData?.customer || "-"}
-                    </TableCell>
-                    <TableCell>{report.coverData?.nomorFpps || "-"}</TableCell>
-                    <TableCell>
-                      {/* PERUBAHAN: Kondisi badge disesuaikan menjadi 'selesai' */}
-                      <Badge
-                        variant={
-                          report.status === "selesai" ? "default" : "secondary"
-                        }
-                      >
-                        {formatStatusText(report.status)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right space-x-1">
-                      {loadingId === report._id ? (
-                        <Loader2 className="h-4 w-4 animate-spin inline-block mr-2" />
-                      ) : (
-                        <>
-                          {/* PERUBAHAN: Teks, kondisi, dan fungsi onClick untuk tombol 'Selesai' */}
-                          {report.status !== "selesai" && (
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>Laporan Tersimpan</CardTitle>
+          <CardDescription>
+            Total {reports.length} laporan ditemukan.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="relative w-full overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nama Customer</TableHead>
+                  <TableHead>No. FPPS</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Aksi</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {reports.length > 0 ? (
+                  reports.map((report) => (
+                    <TableRow key={report._id}>
+                      <TableCell className="font-medium">
+                        {report.coverData?.customer || "-"}
+                      </TableCell>
+                      <TableCell>{report.coverData?.nomorFpps || "-"}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            report.status === "selesai" ? "default" : "secondary"
+                          }
+                        >
+                          {formatStatusText(report.status)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right space-x-1">
+                        {loadingId === report._id ? (
+                          <Loader2 className="h-4 w-4 animate-spin inline-block mr-2" />
+                        ) : (
+                          <>
+                            {report.status !== "selesai" && (
+                              <Button
+                                size="sm"
+                                onClick={() =>
+                                  handleStatusChange(report._id, "selesai")
+                                }
+                              >
+                                Selesai
+                              </Button>
+                            )}
+                            {report.status === "selesai" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() =>
+                                  handleStatusChange(report._id, "analisis")
+                                }
+                              >
+                                Analisis
+                              </Button>
+                            )}
                             <Button
-                              size="sm"
-                              onClick={() =>
-                                handleStatusChange(report._id, "selesai")
-                              }
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEdit(report._id)}
                             >
-                              Selesai
+                              <Pencil className="h-4 w-4" />
                             </Button>
-                          )}
-                          {/* PERUBAHAN: Teks, kondisi, dan fungsi onClick untuk tombol 'Analisis' */}
-                          {report.status === "selesai" && (
                             <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() =>
-                                handleStatusChange(report._id, "analisis")
-                              }
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => confirmDelete(report._id)}
                             >
-                              Analisis
+                              <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEdit(report._id)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(report._id)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </>
-                      )}
+                          </>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center h-24">
+                      Belum ada laporan yang tersimpan.
                     </TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center h-24">
-                    Belum ada laporan yang tersimpan.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 5. Tambahkan AlertDialog untuk konfirmasi hapus */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Apakah Anda yakin?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tindakan ini tidak dapat diurungkan. Laporan akan dihapus secara permanen.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setReportToDelete(null)}>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>Ya, Hapus</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
