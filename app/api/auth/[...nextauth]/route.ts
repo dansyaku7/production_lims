@@ -1,12 +1,10 @@
-// app/api/auth/[...nextauth]/route.ts
-
-import NextAuth from "next-auth";
+import NextAuth, { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import connectDB from "@/lib/db";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
 
-export const authOptions = {
+export const authOptions: AuthOptions = {
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -15,36 +13,56 @@ export const authOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials) return null;
-        await connectDB();
-        
-        const user = await User.findOne({ email: credentials.email });
-        if (!user) return null;
+        if (!credentials) {
+          console.log("Authorize: Tidak ada credentials.");
+          return null;
+        }
 
-        const isPasswordCorrect = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
-        if (!isPasswordCorrect) return null;
-        
-        // Return user object agar bisa diakses di callbacks
-        return { id: user._id.toString(), email: user.email, name: user.name, role: user.role };
+        console.log("Authorize: Mencoba menghubungkan ke DB...");
+        await connectDB();
+        console.log("Authorize: Terhubung ke DB.");
+
+        try {
+          console.log("Authorize: Mencari user dengan email:", credentials.email);
+          const user = await User.findOne({ email: credentials.email });
+
+          if (!user) {
+            console.log("Authorize: User tidak ditemukan.");
+            return null;
+          }
+          console.log("Authorize: User ditemukan:", user.email);
+
+          console.log("Authorize: Membandingkan password...");
+          const isPasswordCorrect = await bcrypt.compare(
+            credentials.password,
+            user.password
+          );
+
+          if (!isPasswordCorrect) {
+            console.log("Authorize: Password tidak cocok.");
+            return null;
+          }
+
+          console.log("Authorize: Password cocok! Mengembalikan data user.");
+          return { id: user._id.toString(), email: user.email, name: user.fullName, role: user.role };
+
+        } catch (error) {
+          console.error("Authorize: Terjadi error saat otorisasi:", error);
+          return null;
+        }
       },
     }),
   ],
-  
-  // --- BAGIAN PENTING ADA DI SINI ---
+
   callbacks: {
     async jwt({ token, user }) {
-      // Saat user login pertama kali, object 'user' dari authorize akan tersedia
       if (user) {
-        token.role = user.role; // Tambahkan field 'role' dari database ke token
+        token.role = user.role;
         token.id = user.id;
       }
       return token;
     },
     async session({ session, token }) {
-      // Tambahkan field 'role' dari token ke object 'session'
       if (session.user) {
         session.user.role = token.role;
         session.user.id = token.id as string;
@@ -58,6 +76,7 @@ export const authOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   pages: {
     signIn: "/",
+    error: "/api/auth/error", // Arahkan ke halaman error default jika ada masalah
   },
 };
 
