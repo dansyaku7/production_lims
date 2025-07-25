@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { PlusCircle, Printer, Trash2 } from "lucide-react";
+import { toast } from "sonner"; // Ditambahkan untuk notifikasi error
 
 type FormRincianProps = {
   formData: {
@@ -49,21 +50,34 @@ export default function FormRincian({
   onSubmit,
   onPrint,
 }: FormRincianProps) {
-  const generateId = (index: number) => {
-    const date = new Date();
-    const y = String(date.getFullYear()).slice(-2);
-    const m = String(date.getMonth() + 1).padStart(2, "0");
-    const d = String(date.getDate()).padStart(2, "0");
-    const suffix = formData.nomorFpps.slice(-3).padStart(3, "0");
-    const seq = String(index + 1).padStart(2, "0");
-    return `${y}${m}${d}-${suffix}.${seq}`;
-  };
 
+  // --- FUNGSI generateId DIHAPUS, LOGIKA PINDAH KE handleAdd ---
+
+  // --- FUNGSI INI DIUBAH TOTAL ---
   const handleAdd = () => {
-    const id = generateId(rincian.length);
+    // 1. Validasi dulu apakah nomor FPPS sudah diisi
+    const baseFpps = formData.nomorFpps;
+    if (!baseFpps || baseFpps.length < 9) {
+      toast.error("Nomor FPPS tidak valid.", {
+        description: "Harap isi Nomor FPPS dengan benar di langkah pertama.",
+      });
+      return;
+    }
+
+    // 2. Pecah nomor FPPS sesuai format yang kamu mau
+    const datePart = baseFpps.substring(0, 6); // Ambil 6 digit pertama (e.g., 250820)
+    const sequencePart = baseFpps.substring(6); // Ambil sisanya (e.g., 058)
+
+    // 3. Tentukan indeks berikutnya agar menjadi .01, .02, dst.
+    const nextIndex = (rincian.length + 1).toString().padStart(2, "0");
+
+    // 4. Gabungkan menjadi format ID yang baru
+    const newId = `${datePart}-${sequencePart}.${nextIndex}`;
+
+    // 5. Tambahkan baris baru ke dalam state
     setRincian([
       ...rincian,
-      { id, area: "", matriks: "", parameter: "", regulasi: "", metode: "" },
+      { id: newId, area: "", matriks: "", parameter: "", regulasi: "", metode: "" },
     ]);
   };
 
@@ -78,6 +92,7 @@ export default function FormRincian({
 
   const handleDelete = (index: number) => {
     const updated = rincian.filter((_, i) => i !== index);
+    // Saat menghapus, kita tidak perlu generate ulang ID yang sudah ada
     setRincian(updated);
   };
 
@@ -112,7 +127,7 @@ export default function FormRincian({
         <div className="space-y-4">
           {rincian.map((item, index) => (
             <div
-              key={item.id}
+              key={index} // Menggunakan index sebagai key lebih aman di sini
               className="p-4 rounded-md border border-border space-y-4 relative"
             >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -122,7 +137,7 @@ export default function FormRincian({
                     <Input
                       value={item.id}
                       readOnly
-                      className="w-1/2 text-muted-foreground border border-input bg-transparent"
+                      className="w-1/2 text-muted-foreground border border-input bg-background"
                     />
                     <Input
                       name="area"
@@ -208,7 +223,7 @@ export default function FormRincian({
           Kembali
         </Button>
         <Button variant="secondary" onClick={onPrint}>
-          <Printer />
+          <Printer className="mr-2 h-4 w-4" /> 
           Print
         </Button>
         <Button onClick={onSubmit}>Simpan & Buat FPPS</Button>
