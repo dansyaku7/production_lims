@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache"; // IMPORT BARU
 import connectDB from "@/lib/db";
 import Fpps from "@/models/Fpps";
 
@@ -69,6 +70,11 @@ export async function PUT(
           { status: 404 }
         );
       }
+      
+      // REVALIDASI DITAMBAHKAN
+      revalidatePath("/registration");
+      revalidatePath(`/registration/${nomor}`);
+
       return NextResponse.json(
         { message: "Data FPPS berhasil diperbarui", data: updatedFpps },
         { status: 200 }
@@ -87,6 +93,11 @@ export async function PUT(
           { status: 404 }
         );
       }
+      
+      // REVALIDASI DITAMBAHKAN
+      revalidatePath("/registration");
+      revalidatePath(`/registration/${nomor}`);
+      
       return NextResponse.json(
         { message: "Status FPPS berhasil diperbarui", data: updatedFpps },
         { status: 200 }
@@ -110,6 +121,7 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: { nomor: string } }
 ) {
+  // FUNGSI DELETE SESUAI ASLINYA, HANYA DITAMBAH REVALIDASI
   const idToDelete = params.nomor;
 
   try {
@@ -123,6 +135,9 @@ export async function DELETE(
         { status: 404 }
       );
     }
+    
+    // REVALIDASI DITAMBAHKAN
+    revalidatePath("/registration");
 
     return NextResponse.json(
       { message: "FPPS berhasil dihapus" },
