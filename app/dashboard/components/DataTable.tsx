@@ -1,28 +1,9 @@
 "use client";
 
 import * as React from "react";
-import {
-  closestCenter,
-  DndContext,
-  useSensor,
-  useSensors,
-  MouseSensor,
-  TouchSensor,
-  KeyboardSensor,
-  type DragEndEvent,
-  type UniqueIdentifier,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+// --- IMPORT DND-KIT DIHAPUS KARENA TIDAK DIPAKAI ---
 import {
   IconCircleCheckFilled,
-  IconDotsVertical,
-  IconGripVertical,
   IconLoader,
   IconChevronLeft,
   IconChevronRight,
@@ -37,7 +18,6 @@ import {
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
-  Row,
   SortingState,
   useReactTable,
   VisibilityState,
@@ -46,14 +26,6 @@ import { z } from "zod";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-// --- PERUBAHAN --- Checkbox tidak lagi digunakan
-// import { Checkbox } from "@/components/ui/checkbox";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -70,6 +42,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+// Schema bisa disederhanakan, tapi kita biarkan agar kompatibel dengan data dari page.tsx
 export const schema = z.object({
   id: z.string(),
   header: z.string(),
@@ -81,42 +54,21 @@ export const schema = z.object({
   reviewer: z.string(),
 });
 
-function DragHandle({ id }: { id: string }) {
-  const { attributes, listeners } = useSortable({ id });
 
-  return (
-    <Button
-      {...attributes}
-      {...listeners}
-      variant="ghost"
-      size="icon"
-      className="text-muted-foreground size-7 hover:bg-transparent"
-    >
-      <IconGripVertical className="text-muted-foreground size-3" />
-    </Button>
-  );
-}
-
+// --- KOLOM YANG DITAMPILKAN UNTUK GUEST ---
 const columns: ColumnDef<z.infer<typeof schema>>[] = [
-  // {
-  //   id: "drag",
-  //   header: () => null,
-  //   cell: ({ row }) => <DragHandle id={row.original.id} />,
-  // },
   {
     id: "no",
-    // PERUBAHAN: Header dibuat rata tengah
     header: () => <div className="text-center">No.</div>,
     cell: ({ row, table }) => {
       const { pageIndex, pageSize } = table.getState().pagination;
-      // PERUBAHAN: Nomor juga dibuat rata tengah
       return (
         <div className="text-center">
           {pageIndex * pageSize + row.index + 1}
         </div>
       );
     },
-    size: 50,
+    size: 60,
   },
   {
     accessorKey: "header",
@@ -124,76 +76,29 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
     cell: ({ row }) => row.original.header,
   },
   {
-    accessorKey: "ppic",
-    header: "Nama PPIC",
-    cell: ({ row }) => row.original.ppic,
-  },
-  {
-    accessorKey: "email",
-    header: "Email PPIC",
-    cell: ({ row }) => row.original.email,
-  },
-  {
-    accessorKey: "nomor",
-    header: "Nomor Handphone",
-    cell: ({ row }) => row.original.limit,
-  },
-  {
     accessorKey: "status",
-    header: "Status",
+    header: () => <div className="text-center">Status</div>,
     cell: ({ row }) => (
-      <Badge
-        variant="outline"
-        className="text-muted-foreground px-1.5 flex gap-1 items-center"
-      >
-        {row.original.status === "selesai" ? (
-          <IconCircleCheckFilled className="fill-green-500 size-4" />
-        ) : (
-          <IconLoader className="animate-spin size-4" />
-        )}
-        {row.original.status}
-      </Badge>
+      <div className="flex justify-center">
+        <Badge
+          variant="outline"
+          className="text-muted-foreground flex w-fit items-center gap-1 px-1.5"
+        >
+          {row.original.status === "selesai" ? (
+            <IconCircleCheckFilled className="size-4 fill-green-500" />
+          ) : (
+            <IconLoader className="size-4 animate-spin" />
+          )}
+          {row.original.status}
+        </Badge>
+      </div>
     ),
+    size: 150,
   },
-  {
-    id: "actions",
-    cell: () => (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon">
-            <IconDotsVertical />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    ),
-  },
+  // --- Kolom PPIC, Email, No HP, dan Actions dihapus dari sini ---
 ];
 
-function DraggableRow({ row }: { row: Row<z.infer<typeof schema>> }) {
-  const { transform, transition, setNodeRef, isDragging } = useSortable({
-    id: row.original.id,
-  });
-
-  return (
-    <TableRow
-      ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
-      data-dragging={isDragging}
-      // --- PERUBAHAN --- 'data-state' untuk seleksi tidak lagi diperlukan
-      // data-state={row.getIsSelected() && "selected"}
-      className="relative z-0 data-[dragging=true]:z-10 data-[dragging=true]:opacity-80"
-    >
-      {row.getVisibleCells().map((cell) => (
-        <TableCell key={cell.id} style={{ width: cell.column.getSize() }}>
-          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-        </TableCell>
-      ))}
-    </TableRow>
-  );
-}
+// --- KOMPONEN DraggableRow DIHAPUS ---
 
 export function DataTable({
   data: initialData,
@@ -201,8 +106,6 @@ export function DataTable({
   data: z.infer<typeof schema>[];
 }) {
   const [data, setData] = React.useState(initialData);
-  // --- PERUBAHAN --- State untuk 'rowSelection' tidak lagi diperlukan
-  // const [rowSelection, setRowSelection] = React.useState({});
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -214,16 +117,7 @@ export function DataTable({
     pageSize: 10,
   });
 
-  const sensors = useSensors(
-    useSensor(MouseSensor),
-    useSensor(TouchSensor),
-    useSensor(KeyboardSensor)
-  );
-
-  const dataIds = React.useMemo<UniqueIdentifier[]>(
-    () => data.map(({ id }) => id),
-    [data]
-  );
+  // --- FUNGSI DAN HOOKS DRAG & DROP DIHAPUS ---
 
   const table = useReactTable({
     data,
@@ -231,14 +125,10 @@ export function DataTable({
     state: {
       sorting,
       columnVisibility,
-      // --- PERUBAHAN --- 'rowSelection' dihapus dari state tabel
-      // rowSelection,
       columnFilters,
       pagination,
     },
     getRowId: (row) => row.id,
-    // --- PERUBAHAN --- Handler untuk 'rowSelection' dihapus
-    // onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
@@ -249,73 +139,63 @@ export function DataTable({
     getSortedRowModel: getSortedRowModel(),
   });
 
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    if (active && over && active.id !== over.id) {
-      setData((prev) => {
-        const oldIndex = dataIds.indexOf(active.id);
-        const newIndex = dataIds.indexOf(over.id);
-        return arrayMove(prev, oldIndex, newIndex);
-      });
-    }
-  }
+  // --- FUNGSI handleDragEnd DIHAPUS ---
 
   return (
     <div className="space-y-4">
       <div className="overflow-hidden rounded-lg border">
-        <DndContext
-          collisionDetection={closestCenter}
-          sensors={sensors}
-          onDragEnd={handleDragEnd}
-        >
-          <Table>
-            <TableHeader className="bg-muted sticky top-0 z-10">
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableHead
-                      key={header.id}
-                      colSpan={header.colSpan}
-                      style={{ width: header.getSize() }}
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                <SortableContext
-                  items={dataIds}
-                  strategy={verticalListSortingStrategy}
-                >
-                  {table.getRowModel().rows.map((row) => (
-                    <DraggableRow key={row.id} row={row} />
-                  ))}
-                </SortableContext>
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center"
+        {/* --- JSX DISERDERHANAKAN TANPA DNDContext --- */}
+        <Table>
+          <TableHeader className="bg-muted sticky top-0 z-10">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead
+                    key={header.id}
+                    colSpan={header.colSpan}
+                    style={{ width: header.getSize() }}
                   >
-                    No results.
-                  </TableCell>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows?.length ? (
+              // --- SortableContext dan DraggableRow DIHAPUS ---
+              table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id}>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </TableCell>
+                  ))}
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </DndContext>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
+                  No results.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </div>
 
       <div className="flex items-center justify-between px-2">
-        {/* --- PERUBAHAN --- Teks jumlah baris terpilih dihapus */}
         <div className="flex-1 text-sm text-muted-foreground">
           Total {table.getFilteredRowModel().rows.length} baris.
         </div>
