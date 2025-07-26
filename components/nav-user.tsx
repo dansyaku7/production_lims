@@ -1,6 +1,5 @@
 "use client";
 
-import { signOut } from "next-auth/react"; // <-- 1. IMPORT FUNGSI SIGN OUT
 import {
   IconLogout,
   IconUserCircle,
@@ -23,7 +22,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-// useRouter tidak kita perlukan lagi untuk logout
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 export function NavUser({
@@ -36,7 +35,7 @@ export function NavUser({
   };
 }) {
   const { isMobile } = useSidebar();
-  // const router = useRouter(); // Tidak perlu lagi
+  const router = useRouter();
 
   return (
     <SidebarMenu>
@@ -52,6 +51,7 @@ export function NavUser({
                   src={user.avatar ? user.avatar : "/images/avatar/user.png"}
                   alt={user.name}
                 />
+
                 <AvatarFallback className="rounded-lg">
                   {user.name?.charAt(0)?.toUpperCase() || "U"}
                 </AvatarFallback>
@@ -97,13 +97,12 @@ export function NavUser({
                 Account
               </DropdownMenuItem>
             </DropdownMenuGroup>
-            
-            {/* --- 2. UBAH LOGIKA ONCLICK DI SINI --- */}
             <DropdownMenuItem
-              onSelect={(e) => {
-                e.preventDefault(); // Mencegah default behavior dropdown
+              onClick={() => {
+                localStorage.removeItem("token");
+                localStorage.removeItem("user");
+                router.push("/");
                 toast.success("You’ve been logged out!");
-                signOut({ callbackUrl: "/" }); // Logout dan arahkan ke halaman utama
               }}
             >
               <IconLogout />
